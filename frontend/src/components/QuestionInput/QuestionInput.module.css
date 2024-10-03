@@ -94,3 +94,9 @@
 .uploadedImage {
   margin-right: 70px;
 }
+
+.fileName {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #333;
+}
