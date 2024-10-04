@@ -429,8 +429,29 @@ async def add_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user["user_principal_id"]
 
+    request_json = {}
+    # Handle file upload
+    if 'file' in request.files:
+        file = (await request.files)['file']
+        if file.filename != '':
+            file_content = file.read()
+            file_content = file_content.decode('utf-8')
+            print(file_content)
+
+            form = await request.form
+            json_data = form.get('data')
+            if json_data:
+                try:
+                    request_json = json.loads(json_data)
+                except json.JSONDecodeError:
+                    return jsonify({"error": "Invalid JSON data"}), 400
+            else:
+                return jsonify({"error": "No JSON data provided"}), 400
+    else:
+        request_json = await request.get_json()
+
     ## check request for conversation_id
-    request_json = await request.get_json()
+    # request_json = await request.get_json()
     conversation_id = request_json.get("conversation_id", None)
 
     try:
