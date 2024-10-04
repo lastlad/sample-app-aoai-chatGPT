@@ -431,7 +431,7 @@ async def add_conversation():
 
     request_json = {}
     # Handle file upload
-    if 'file' in request.files:
+    if 'file' in (await request.files):
         file = (await request.files)['file']
         if file.filename != '':
             file_content = file.read()
