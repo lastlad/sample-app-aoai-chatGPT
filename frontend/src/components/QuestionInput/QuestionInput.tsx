@@ -45,38 +45,40 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         return
       }
 
+      setFile(uploadedFile)
+
       if (uploadedFile.type === 'application/pdf') {
-        setPdfUrl(URL.createObjectURL(uploadedFile))
-
-        const fileReader = new FileReader()
-        fileReader.onload = async event => {
-          const typedarray = new Uint8Array(event.target?.result as ArrayBuffer)
-          try {
-            const loadingTask = getDocument(typedarray)
-            const pdf = await loadingTask.promise
-            console.log(`PDF loaded. Number of pages: ${pdf.numPages}`)
-
-            // Extracting text from each page
-            for (let i = 1; i <= pdf.numPages; i++) {
-              const page = await pdf.getPage(i)
-              const textContent = await page.getTextContent()
-              const textItems = textContent.items
-              const text = textItems.map((item: any) => item.str).join(' ')
-              console.log(`Page ${i}: ${text}`)
-            }
-          } catch (error) {
-            console.error('Error loading PDF:', error)
-          }
-        }
-
-        fileReader.readAsArrayBuffer(uploadedFile)
+        handlePdfUpload(uploadedFile)
       } else {
         await convertToBase64(uploadedFile)
       }
-
-      setFile(uploadedFile)
-      await uploadFile(uploadedFile) // Make the API call
     }
+  }
+
+  const handlePdfUpload = (uploadedFile: File) => {
+    setPdfUrl(URL.createObjectURL(uploadedFile))
+
+    const fileReader = new FileReader()
+    fileReader.onload = async event => {
+      const typedarray = new Uint8Array(event.target?.result as ArrayBuffer)
+      try {
+        const loadingTask = getDocument(typedarray)
+        const pdf = await loadingTask.promise
+        console.log(`PDF loaded. Number of pages: ${pdf.numPages}`)
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const textContent = await page.getTextContent()
+          const textItems = textContent.items
+          const text = textItems.map((item: any) => item.str).join(' ')
+          console.log(`Page ${i}: ${text}`)
+        }
+      } catch (error) {
+        console.error('Error loading PDF:', error)
+      }
+    }
+
+    fileReader.readAsArrayBuffer(uploadedFile)
   }
 
   const convertToBase64 = async (file: Blob) => {
@@ -88,34 +90,12 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
     }
   }
 
-  const uploadFile = async (file: Blob) => {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Upload failed: ${errorText}`)
-      }
-
-      const result = await response.json()
-      console.log('File uploaded successfully:', result)
-    } catch (error) {
-      console.error('API call failed:', error)
-      throw error // Rethrow to handle in the calling function
-    }
-  }
-
-  const sendQuestion = () => {
+  const sendQuestion = async () => {
     if (disabled || !question.trim()) {
       return
     }
 
+    const formData = new FormData()
     const questionContent: ChatMessage['content'] = base64Image
       ? [
           { type: 'text', text: question },
@@ -123,7 +103,30 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         ]
       : question.toString()
 
-    onSend(questionContent, conversationId)
+    formData.append('question', JSON.stringify(questionContent))
+
+    if (file) {
+      formData.append('file', file)
+    }
+
+    try {
+      const response = await fetch('/history/generate', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Send question failed: ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('Question sent successfully:', result)
+    } catch (error) {
+      console.error('API call failed:', error)
+    }
+
+    // Reset state
     setBase64Image(null)
     setPdfUrl(null)
     setFile(null)
