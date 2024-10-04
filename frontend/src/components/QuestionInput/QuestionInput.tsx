@@ -109,7 +109,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         ]
       : question.toString()
 
-    formData.append('data', JSON.stringify(questionContent))
+    formData.append('data', JSON.stringify({ "data": questionContent }))
 
     if (file) {
       formData.append('file', file)
