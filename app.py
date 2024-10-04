@@ -429,6 +429,21 @@ async def add_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user["user_principal_id"]
 
+    ## check if the request contains a file attachment.
+    if 'file' in await request.files:
+        attached_file = (await request.files)['file']
+
+        if attached_file:
+            try:
+                file_contents = attached_file.read()
+                print(file_contents.decode('utf-8'))
+            except Exception as e:
+                logging.exception("Exception in file upload")
+                return jsonify({"error": str(e)}), 500
+        
+
+
+
     ## check request for conversation_id
     request_json = await request.get_json()
     conversation_id = request_json.get("conversation_id", None)
