@@ -5,6 +5,7 @@ import logging
 import uuid
 import httpx
 import asyncio
+import mimetypes
 from quart import (
     Blueprint,
     Quart,
@@ -429,23 +430,49 @@ async def add_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user["user_principal_id"]
 
-    ## check if the request contains a file attachment.
-    if 'file' in await request.files:
-        attached_file = (await request.files)['file']
-
-        if attached_file:
-            try:
-                file_contents = attached_file.read()
-                print(file_contents.decode('utf-8'))
-            except Exception as e:
-                logging.exception("Exception in file upload")
-                return jsonify({"error": str(e)}), 500
+    ## Check if the request contains form data used for sending file attachments.
+    if await request.form:
         
+        form = await request.form
+        
+        json_data = form.get('json')
+        
+        if not json_data:
+            raise Exception("No user message found")
+        else:
+            try:
+                request_json = json.loads(json_data)
+            except Exception as e:
+                logging.exception("Exception in /history/generate")
+                return jsonify({"error": str(e)}), 500
 
+        ## check if the request contains a file attachment.
+        if 'file_attachment' not in await request.files:
+            raise Exception("No file attachment found")
+        else:
+            file_attachment = (await request.files)['file_attachment']
 
+            # Handle text file attachments
+            if file_attachment and mimetypes.guess_type(file_attachment.filename)[0] == "text/plain":
+                try:
+                    file_name = file_attachment.filename
+                    file_handle = file_attachment.read()
+                    file_contents = file_handle.decode('utf-8')
+
+                    # Append the file contents to the last messages in the array for the "user" role.
+                    messages = request_json["messages"]
+                    if len(messages) > 0 and messages[-1]["role"] == "user":
+                        request_json["messages"][-1]["content"] += f"\n\n Filename: {file_name} ####Context#### \n\n {file_contents}"
+
+                except Exception as e:
+                    logging.exception("Exception in /history/generate")
+                    return jsonify({"error": str(e)}), 500
+            elif file_attachment and mimetypes.guess_type(file_attachment.filename)[0] == "application/pdf":
+                raise Exception("Only text files are supported for file attachments currently.")
+    else: #If the request does not contain form data, then it is a JSON request.
+        request_json = await request.get_json()
 
     ## check request for conversation_id
-    request_json = await request.get_json()
     conversation_id = request_json.get("conversation_id", None)
 
     try:
@@ -484,7 +511,7 @@ async def add_conversation():
             raise Exception("No user message found")
 
         # Submit request to Chat Completions for response
-        request_body = await request.get_json()
+        request_body = request_json
         history_metadata["conversation_id"] = conversation_id
         request_body["history_metadata"] = history_metadata
         return await conversation_internal(request_body, request.headers)
