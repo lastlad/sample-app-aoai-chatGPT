@@ -28,6 +28,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
   const [base64Image, setBase64Image] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [textFileName, setTextFileName] = useState<string | null>(null) // New state for text file name
 
   const appStateContext = useContext(AppStateContext)
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false
@@ -45,38 +46,45 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         return
       }
 
+      setFile(uploadedFile) // Set the file regardless of type to append it in the FormData
+
       if (uploadedFile.type === 'application/pdf') {
-        setPdfUrl(URL.createObjectURL(uploadedFile))
-
-        const fileReader = new FileReader()
-        fileReader.onload = async event => {
-          const typedarray = new Uint8Array(event.target?.result as ArrayBuffer)
-          try {
-            const loadingTask = getDocument(typedarray)
-            const pdf = await loadingTask.promise
-            console.log(`PDF loaded. Number of pages: ${pdf.numPages}`)
-
-            // Extracting text from each page
-            for (let i = 1; i <= pdf.numPages; i++) {
-              const page = await pdf.getPage(i)
-              const textContent = await page.getTextContent()
-              const textItems = textContent.items
-              const text = textItems.map((item: any) => item.str).join(' ')
-              console.log(`Page ${i}: ${text}`)
-            }
-          } catch (error) {
-            console.error('Error loading PDF:', error)
-          }
-        }
-
-        fileReader.readAsArrayBuffer(uploadedFile)
-      } else {
+        handlePdfUpload(uploadedFile)
+      } else if (['image/png', 'image/jpeg'].includes(uploadedFile.type)) {
+        // Convert image to base64 for image preview or processing
         await convertToBase64(uploadedFile)
+      } else if (uploadedFile.type === 'text/plain') {
+        // For text files, no need to read the content; just store it as `file` and display name
+        setTextFileName(uploadedFile.name) // Set the text file name
+        console.log('Text file uploaded:', uploadedFile.name)
       }
-
-      setFile(uploadedFile)
-      await uploadFile(uploadedFile) // Make the API call
     }
+  }
+
+  const handlePdfUpload = (uploadedFile: File) => {
+    setPdfUrl(URL.createObjectURL(uploadedFile))
+
+    const fileReader = new FileReader()
+    fileReader.onload = async event => {
+      const typedarray = new Uint8Array(event.target?.result as ArrayBuffer)
+      try {
+        const loadingTask = getDocument(typedarray)
+        const pdf = await loadingTask.promise
+        console.log(`PDF loaded. Number of pages: ${pdf.numPages}`)
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const textContent = await page.getTextContent()
+          const textItems = textContent.items
+          const text = textItems.map((item: any) => item.str).join(' ')
+          console.log(`Page ${i}: ${text}`)
+        }
+      } catch (error) {
+        console.error('Error loading PDF:', error)
+      }
+    }
+
+    fileReader.readAsArrayBuffer(uploadedFile)
   }
 
   const convertToBase64 = async (file: Blob) => {
@@ -88,34 +96,12 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
     }
   }
 
-  const uploadFile = async (file: Blob) => {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Upload failed: ${errorText}`)
-      }
-
-      const result = await response.json()
-      console.log('File uploaded successfully:', result)
-    } catch (error) {
-      console.error('API call failed:', error)
-      throw error // Rethrow to handle in the calling function
-    }
-  }
-
-  const sendQuestion = () => {
+  const sendQuestion = async () => {
     if (disabled || !question.trim()) {
       return
     }
 
+    const formData = new FormData()
     const questionContent: ChatMessage['content'] = base64Image
       ? [
           { type: 'text', text: question },
@@ -123,10 +109,34 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         ]
       : question.toString()
 
-    onSend(questionContent, conversationId)
+    formData.append('data', JSON.stringify({ "data": questionContent }))
+
+    if (file) {
+      formData.append('file', file)
+    }
+
+    try {
+      const response = await fetch('/history/generate', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Send question failed: ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('Question sent successfully:', result)
+    } catch (error) {
+      console.error('API call failed:', error)
+    }
+
+    // Reset state
     setBase64Image(null)
     setPdfUrl(null)
     setFile(null)
+    setTextFileName(null) // Reset text file name
 
     if (clearOnSend) {
       setQuestion('')
@@ -179,6 +189,11 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
             <Viewer fileUrl={pdfUrl} />
           </Worker>
           <p>Uploaded PDF: {file?.name}</p>
+        </div>
+      )}
+      {textFileName && (
+        <div className={styles.fileName}>
+          <p>Uploaded Text File: {textFileName}</p>
         </div>
       )}
       <div
