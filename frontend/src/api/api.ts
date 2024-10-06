@@ -3,14 +3,23 @@ import { chatHistorySampleData } from '../constants/chatHistory'
 import { ChatMessage, Conversation, ConversationRequest, CosmosDBHealth, CosmosDBStatus, UserInfo } from './models'
 
 export async function conversationApi(options: ConversationRequest, abortSignal: AbortSignal): Promise<Response> {
+  let body
+  body = JSON.stringify({
+    messages: options.messages
+  })
+
+  let fileAttachment = options.fileAttachment
+  if (fileAttachment) {
+    const formData = new FormData()
+    formData.append('file_attachment', fileAttachment)
+    formData.append('json', body)
+    body = formData
+  }
+
   const response = await fetch('/conversation', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      messages: options.messages
-    }),
+    headers: fileAttachment ? {} : { 'Content-Type': 'application/json' }, // If file is attached, let browser set content type.
+    body: body,
     signal: abortSignal
   })
 
@@ -128,11 +137,19 @@ export const historyGenerate = async (
       messages: options.messages
     })
   }
+
+  let fileAttachment = options.fileAttachment
+
+  if (fileAttachment) {
+    const formData = new FormData()
+    formData.append('file_attachment', fileAttachment)
+    formData.append('json', body)
+    body = formData
+  }
+
   const response = await fetch('/history/generate', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: fileAttachment ? {} : { 'Content-Type': 'application/json' }, // If file is attached, let browser set content type.
     body: body,
     signal: abortSignal
   })

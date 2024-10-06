@@ -86,6 +86,7 @@ export type ChatResponse = {
 
 export type ConversationRequest = {
   messages: ChatMessage[]
+  fileAttachment?: File
 }
 
 export type UserInfo = {

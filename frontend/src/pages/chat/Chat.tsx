@@ -179,13 +179,15 @@ const Chat = () => {
     }
   }
 
-  const makeApiRequestWithoutCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
+  const makeApiRequestWithoutCosmosDB = async (question: ChatMessage["content"], conversationId?: string, fileAttachment?: File) => {
     setIsLoading(true)
     setShowLoadingMessage(true)
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
 
-    const questionContent = typeof question === 'string' ? question : [{ type: "text", text: question[0].text }, { type: "image_url", image_url: { url: question[1].image_url.url } }]
+    const questionContent = typeof question === 'string' 
+        ? (fileAttachment ? question + '\n\n' + 'File: ' + fileAttachment?.name : question)
+        : [{ type: "text", text: question[0].text }, { type: "image_url", image_url: { url: question[1].image_url.url } }]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
     const userMessage: ChatMessage = {
@@ -220,7 +222,8 @@ const Chat = () => {
     setMessages(conversation.messages)
 
     const request: ConversationRequest = {
-      messages: [...conversation.messages.filter(answer => answer.role !== ERROR)]
+      messages: [...conversation.messages.filter(answer => answer.role !== ERROR)],
+      fileAttachment: fileAttachment
     }
 
     let result = {} as ChatResponse
@@ -306,12 +309,14 @@ const Chat = () => {
     return abortController.abort()
   }
 
-  const makeApiRequestWithCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
+  const makeApiRequestWithCosmosDB = async (question: ChatMessage["content"], conversationId?: string, fileAttachment?: File) => {
     setIsLoading(true)
     setShowLoadingMessage(true)
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
-    const questionContent = typeof question === 'string' ? question : [{ type: "text", text: question[0].text }, { type: "image_url", image_url: { url: question[1].image_url.url } }]
+    const questionContent = typeof question === 'string' 
+          ? (fileAttachment ? question + '\n\n' + 'File: ' + fileAttachment?.name : question)
+          : [{ type: "text", text: question[0].text }, { type: "image_url", image_url: { url: question[1].image_url.url } }]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
     const userMessage: ChatMessage = {
@@ -334,12 +339,14 @@ const Chat = () => {
       } else {
         conversation.messages.push(userMessage)
         request = {
-          messages: [...conversation.messages.filter(answer => answer.role !== ERROR)]
+          messages: [...conversation.messages.filter(answer => answer.role !== ERROR)],
+          fileAttachment: fileAttachment
         }
       }
     } else {
       request = {
-        messages: [userMessage].filter(answer => answer.role !== ERROR)
+        messages: [userMessage].filter(answer => answer.role !== ERROR),
+        fileAttachment: fileAttachment
       }
       setMessages(request.messages)
     }
@@ -935,10 +942,10 @@ const Chat = () => {
                 clearOnSend
                 placeholder="Type a new question..."
                 disabled={isLoading}
-                onSend={(question, id) => {
+                onSend={(question, id, fileAttachment) => {
                   appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                    ? makeApiRequestWithCosmosDB(question, id)
-                    : makeApiRequestWithoutCosmosDB(question, id)
+                    ? makeApiRequestWithCosmosDB(question, id, fileAttachment)
+                    : makeApiRequestWithoutCosmosDB(question, id, fileAttachment)
                 }}
                 conversationId={
                   appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined

@@ -1,7 +1,6 @@
 import { useContext, useState } from 'react'
 import { FontIcon, Stack, TextField } from '@fluentui/react'
 import { SendRegular } from '@fluentui/react-icons'
-import { Worker, Viewer } from '@react-pdf-viewer/core'
 import Send from '../../assets/Send.svg'
 
 import styles from './QuestionInput.module.css'
@@ -9,26 +8,20 @@ import { ChatMessage } from '../../api'
 import { AppStateContext } from '../../state/AppProvider'
 import { resizeImage } from '../../utils/resizeImage'
 
-import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist/build/pdf'
-import '@react-pdf-viewer/core/lib/styles/index.css'
-
-// Use the same version for the worker
-GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`
-
 interface Props {
-  onSend: (question: ChatMessage['content'], id?: string) => void
+  onSend: (question: ChatMessage['content'], id?: string, fileAttachment?: File) => void
   disabled: boolean
   placeholder?: string
   clearOnSend?: boolean
   conversationId?: string
+  fileAttachment?: File | null
 }
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId }: Props) => {
   const [question, setQuestion] = useState<string>('')
   const [base64Image, setBase64Image] = useState<string | null>(null)
-  const [file, setFile] = useState<File | null>(null)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [textFileName, setTextFileName] = useState<string | null>(null) // New state for text file name
+  const [fileAttachment, setFileAttachment] = useState<File | null>(null)
+  const [fileAttachmentName, setAttachmentName] = useState<string | null>(null)
 
   const appStateContext = useContext(AppStateContext)
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false
@@ -41,50 +34,14 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         alert('File size exceeds 5MB limit.')
         return
       }
-      if (!['image/png', 'image/jpeg', 'application/pdf', 'text/plain'].includes(uploadedFile.type)) {
-        alert('Invalid file type. Please upload an image, PDF, or text file.')
-        return
-      }
 
-      setFile(uploadedFile) // Set the file regardless of type to append it in the FormData
-
-      if (uploadedFile.type === 'application/pdf') {
-        handlePdfUpload(uploadedFile)
-      } else if (['image/png', 'image/jpeg'].includes(uploadedFile.type)) {
-        // Convert image to base64 for image preview or processing
+      if (uploadedFile.type.startsWith('image/')) {
         await convertToBase64(uploadedFile)
-      } else if (uploadedFile.type === 'text/plain') {
-        // For text files, no need to read the content; just store it as `file` and display name
-        setTextFileName(uploadedFile.name) // Set the text file name
-        console.log('Text file uploaded:', uploadedFile.name)
+      } else {
+        setFileAttachment(uploadedFile)
+        setAttachmentName(uploadedFile.name)
       }
     }
-  }
-
-  const handlePdfUpload = (uploadedFile: File) => {
-    setPdfUrl(URL.createObjectURL(uploadedFile))
-
-    const fileReader = new FileReader()
-    fileReader.onload = async event => {
-      const typedarray = new Uint8Array(event.target?.result as ArrayBuffer)
-      try {
-        const loadingTask = getDocument(typedarray)
-        const pdf = await loadingTask.promise
-        console.log(`PDF loaded. Number of pages: ${pdf.numPages}`)
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i)
-          const textContent = await page.getTextContent()
-          const textItems = textContent.items
-          const text = textItems.map((item: any) => item.str).join(' ')
-          console.log(`Page ${i}: ${text}`)
-        }
-      } catch (error) {
-        console.error('Error loading PDF:', error)
-      }
-    }
-
-    fileReader.readAsArrayBuffer(uploadedFile)
   }
 
   const convertToBase64 = async (file: Blob) => {
@@ -96,47 +53,25 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
     }
   }
 
-  const sendQuestion = async () => {
+  const sendQuestion = () => {
     if (disabled || !question.trim()) {
       return
     }
 
-    const formData = new FormData()
-    const questionContent: ChatMessage['content'] = base64Image
-      ? [
-          { type: 'text', text: question },
-          { type: 'image_url', image_url: { url: base64Image } }
-        ]
-      : question.toString()
+    const questionContent: ChatMessage["content"] = base64Image
+      ? [{ type: "text", text: question }, { type: "image_url", image_url: { url: base64Image } }]
+      : question.toString();
 
-    formData.append('data', JSON.stringify({ "data": questionContent }))
-
-    if (file) {
-      formData.append('file', file)
-    }
-
-    try {
-      const response = await fetch('/history/generate', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Send question failed: ${errorText}`)
-      }
-
-      const result = await response.json()
-      console.log('Question sent successfully:', result)
-    } catch (error) {
-      console.error('API call failed:', error)
+    if (conversationId && questionContent !== undefined) {
+      onSend(questionContent, conversationId, fileAttachment || undefined)
+    } else {
+      onSend(questionContent, undefined, fileAttachment || undefined)
     }
 
     // Reset state
     setBase64Image(null)
-    setPdfUrl(null)
-    setFile(null)
-    setTextFileName(null) // Reset text file name
+    setFileAttachment(null)
+    setAttachmentName(null)
 
     if (clearOnSend) {
       setQuestion('')
@@ -173,27 +108,19 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
           <input
             type="file"
             id="fileInput"
-            onChange={handleFileUpload}
-            accept="image/*, .pdf, text/plain"
+            onChange={event => handleFileUpload(event)}
+            accept="image/*,text/plain,application/pdf"
             className={styles.fileInput}
           />
-          <label htmlFor="fileInput" className={styles.fileLabel} aria-label="Upload Image">
-            <FontIcon className={styles.fileIcon} iconName={'PhotoCollection'} aria-label="Upload Image" />
+          <label htmlFor="fileInput" className={styles.fileLabel} aria-label="Upload File">
+            <FontIcon className={styles.fileIcon} iconName={'Attach'} aria-label="Upload File" />
           </label>
         </div>
       )}
       {base64Image && <img className={styles.uploadedImage} src={base64Image} alt="Uploaded Preview" />}
-      {pdfUrl && (
+      {fileAttachmentName && (
         <div className={styles.fileName}>
-          <Worker workerUrl={GlobalWorkerOptions.workerSrc}>
-            <Viewer fileUrl={pdfUrl} />
-          </Worker>
-          <p>Uploaded PDF: {file?.name}</p>
-        </div>
-      )}
-      {textFileName && (
-        <div className={styles.fileName}>
-          <p>Uploaded Text File: {textFileName}</p>
+          <p>Uploaded File: {fileAttachmentName}</p>
         </div>
       )}
       <div
