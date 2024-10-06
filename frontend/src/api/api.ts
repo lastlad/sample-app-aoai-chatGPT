@@ -3,14 +3,22 @@ import { chatHistorySampleData } from '../constants/chatHistory'
 import { ChatMessage, Conversation, ConversationRequest, CosmosDBHealth, CosmosDBStatus, UserInfo } from './models'
 
 export async function conversationApi(options: ConversationRequest, abortSignal: AbortSignal): Promise<Response> {
+  const formData = new FormData()
+  formData.append('json', JSON.stringify({ messages: options.messages }))
+  const fileAttachment = options.messages[0].file_attachment
+
+  // Check if fileAttachment is defined and valid
+  if (fileAttachment && fileAttachment.file) {
+    formData.append('file_attachment', fileAttachment.file) // Append the actual file (Blob)
+  }
+
   const response = await fetch('/conversation', {
     method: 'POST',
+
     headers: {
-      'Content-Type': 'application/json'
+      'mime-Type': 'multipart/form-data'
     },
-    body: JSON.stringify({
-      messages: options.messages
-    }),
+    body: formData,
     signal: abortSignal
   })
 
@@ -118,6 +126,7 @@ export const historyGenerate = async (
   convId?: string
 ): Promise<Response> => {
   let body
+
   if (convId) {
     body = JSON.stringify({
       conversation_id: convId,

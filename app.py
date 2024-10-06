@@ -407,9 +407,52 @@ async def conversation_internal(request_body, request_headers):
 
 @bp.route("/conversation", methods=["POST"])
 async def conversation():
-    if not request.is_json:
-        return jsonify({"error": "request must be json"}), 415
-    request_json = await request.get_json()
+    if await request.form:
+        
+        form = await request.form
+        
+        json_data = form.get('json')
+
+        print(json.loads(json_data))
+        
+        if not json_data:
+            raise Exception("No user message found")
+        else:
+            try:
+                request_json = json.loads(json_data)
+            except Exception as e:
+                logging.exception("Exception in /history/generate")
+                return jsonify({"error": str(e)}), 500
+
+        ## check if the request contains a file attachment.
+        if 'file_attachment' not in await request.files:
+            raise Exception("No file attachment found")
+        else:
+            file_attachment = (await request.files)['file_attachment']
+
+            # Handle text file attachments
+            if file_attachment and mimetypes.guess_type(file_attachment.filename)[0] == "text/plain":
+                try:
+                    file_name = file_attachment.filename
+                    file_handle = file_attachment.read()
+                    file_contents = file_handle.decode('utf-8')
+
+                    # Append the file contents to the last messages in the array for the "user" role.
+                    messages = request_json["messages"]
+                    if len(messages) > 0 and messages[-1]["role"] == "user":
+                        request_json["messages"][-1]["content"] += f"\n\n Filename: {file_name} ####Context#### \n\n {file_contents}"
+
+                except Exception as e:
+                    logging.exception("Exception in /history/generate")
+                    return jsonify({"error": str(e)}), 500
+            elif file_attachment and mimetypes.guess_type(file_attachment.filename)[0] == "application/pdf":
+                raise Exception("Only text files are supported for file attachments currently.")
+    else: #If the request does not contain form data, then it is a JSON request.
+        request_json = await request.get_json()
+
+    # if not request.is_json:
+    #     return jsonify({"error": "request must be json"}), 415
+    # request_json = await request.get_json()
 
     return await conversation_internal(request_json, request.headers)
 

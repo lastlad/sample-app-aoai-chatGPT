@@ -37,10 +37,17 @@ export type AzureSqlServerExecResults = {
   all_exec_results: AzureSqlServerExecResult[]
 }
 
+export type TextContent = { type: 'text'; text: string }
+export type ImageContent = { type: 'image_url'; image_url: { url: string } }
+export type FileContent = { type: 'file_attachment'; file: File | null }
+
+export type ChatMessageContent = [TextContent, ImageContent] | [TextContent, FileContent] | string
+
 export type ChatMessage = {
   id: string
   role: string
-  content: string | [{ type: string; text: string }, { type: string; image_url: { url: string } }]
+  content: ChatMessageContent
+  file_attachment?: FileContent
   end_turn?: boolean
   date: string
   feedback?: Feedback
