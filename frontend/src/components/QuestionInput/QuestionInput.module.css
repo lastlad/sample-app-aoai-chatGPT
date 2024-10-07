@@ -67,6 +67,7 @@
   position: absolute;
   right: 24px;
   top: 20px;
+  max-width: 20%;
 }
 
 .fileInput {
@@ -96,7 +97,52 @@
 }
 
 .fileName {
-  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 25%;
+  padding: 10px 10px 10px 10px;
+  border-radius: 20px;
+  border: 1px solid #a7a2a2;
+  background-color: #f3f3f3;
+  overflow: hidden;
   font-size: 14px;
-  color: #333;
+  max-height: 45px;
+  margin-top: 60px;
+  margin-right: 60px;
+}
+
+.fileInfo {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fileName p {
+  margin: 0;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+
+.fileName .fileInfo p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.closeButton:hover {
+  background-color: #e0e0e0; /* Slightly darker on hover for feedback */
 }

@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react'
+import { useContext, useRef, useState } from 'react'
 import { FontIcon, Stack, TextField } from '@fluentui/react'
 import { SendRegular } from '@fluentui/react-icons'
 
@@ -22,16 +22,21 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
   const [base64Image, setBase64Image] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [textFileName, setTextFileName] = useState<string | null>(null)
+  const [textFileType, setTextFileType] = useState<string | null>(null)
   const appStateContext = useContext(AppStateContext)
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false
 
-  // const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = event.target.files?.[0]
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  //   if (file) {
-  //     await convertToBase64(file)
-  //   }
-  // }
+  const handleRemoveFile = () => {
+    setFile(null)
+    setTextFileName('')
+    setTextFileType('')
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0]
@@ -52,6 +57,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         await convertToBase64(uploadedFile)
       } else if (uploadedFile.type === 'text/plain') {
         setTextFileName(uploadedFile.name)
+        setTextFileType(uploadedFile.type)
         console.log('Text file uploaded:', uploadedFile.name)
       }
     }
@@ -127,6 +133,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
             type="file"
             id="fileInput"
             onChange={event => handleFileUpload(event)}
+            ref={fileInputRef}
             accept="image/*, .pdf, text/plain"
             className={styles.fileInput}
           />
@@ -138,7 +145,13 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
       {base64Image && <img className={styles.uploadedImage} src={base64Image} alt="Uploaded Preview" />}
       {textFileName && (
         <div className={styles.fileName}>
-          <p>Uploaded Text File: {textFileName}</p>
+          <div className={styles.fileInfo}>
+            <p title={textFileName}>📎 File: {textFileName}</p>
+            <p title={textFileName}>📄 Type: {textFileType}</p>
+          </div>
+          <button onClick={handleRemoveFile} className={styles.closeButton}>
+            ❌
+          </button>
         </div>
       )}
       <div
