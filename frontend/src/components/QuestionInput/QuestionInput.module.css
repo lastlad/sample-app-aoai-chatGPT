@@ -100,3 +100,25 @@
   font-size: 14px;
   color: #333;
 }
+
+.file-upload-section {
+  padding: 10px 15px;
+  margin: 15px 65px 0 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  height: fit-content;
+  background-color: #EEE;
+  border: 1px solid #999;
+  border-radius: 4px;
+}
+
+.file-upload-section p {
+  margin: 0;
+}
+
+.file-upload-section img {
+  height: 36px;
+  width: 36px;
+}
