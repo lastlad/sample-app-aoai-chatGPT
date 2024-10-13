@@ -7,6 +7,7 @@ import styles from './QuestionInput.module.css'
 import { ChatMessage } from '../../api'
 import { AppStateContext } from '../../state/AppProvider'
 import { resizeImage } from '../../utils/resizeImage'
+import FileIcon from '../../assets/file_icon.svg'
 
 interface Props {
   onSend: (question: ChatMessage['content'], id?: string, fileAttachment?: File) => void
@@ -119,7 +120,8 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
       )}
       {base64Image && <img className={styles.uploadedImage} src={base64Image} alt="Uploaded Preview" />}
       {fileAttachmentName && (
-        <div className={styles.fileName}>
+        <div className={`file-upload-section ${styles.fileName}`}>
+          <img src={FileIcon} alt="File Icon"/>
           <p>Uploaded File: {fileAttachmentName}</p>
         </div>
       )}
