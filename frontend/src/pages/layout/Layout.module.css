@@ -5,7 +5,7 @@
 }
 
 .header {
-  background-color: #f2f2f2;
+  background-color: var(--header-bg);
 }
 
 .headerContainer {
@@ -28,7 +28,7 @@
   line-height: 28px;
   display: flex;
   align-items: flex-end;
-  color: #242424;
+  color: var(--text-color);
 }
 
 .headerIcon {
@@ -63,9 +63,10 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #707070;
-  border: 1px solid #d1d1d1;
+  color: var(--secondary-text);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
+  background-color: var(--dialog-bg);
 }
 
 .copyButtonContainer {
@@ -76,18 +77,18 @@
   align-items: center;
   padding: 5px 12px;
   gap: 4px;
-  background: #ffffff;
-  border: 1px solid #d1d1d1;
+  background: var(--dialog-bg);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
 }
 
 .copyButtonContainer:hover {
   cursor: pointer;
-  background: #d1d1d1;
+  background: var(--button-hover);
 }
 
 .copyButton {
-  color: #424242;
+  color: var(--text-color);
 }
 
 .copyButtonText {
@@ -97,7 +98,7 @@
   line-height: 20px;
   display: flex;
   align-items: center;
-  color: #242424;
+  color: var(--text-color);
 }
 
 @media (max-width: 480px) {

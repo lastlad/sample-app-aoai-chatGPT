@@ -5,7 +5,7 @@
   right: 0%;
   top: 0%;
   bottom: 0%;
-  background: #ffffff;
+  background: var(--dialog-bg);
   box-shadow:
     0px 8px 16px rgba(0, 0, 0, 0.14),
     0px 0px 2px rgba(0, 0, 0, 0.12);
@@ -19,6 +19,17 @@
   margin-bottom: 10px;
   margin-left: 12px;
   margin-right: 12px;
+  color: var(--text-color);
+}
+
+.questionInputTextArea input,
+.questionInputTextArea textarea {
+  color: var(--text-color) !important;
+  caret-color: var(--text-color);
+}
+
+.questionInputTextArea ::placeholder {
+  color: var(--secondary-text) !important;
 }
 
 .questionInputSendButtonContainer {
@@ -37,7 +48,7 @@
   width: 24px;
   height: 23px;
   background: none;
-  color: #424242;
+  color: var(--secondary-text);
 }
 
 .questionInputBottomBorder {
@@ -88,7 +99,7 @@
 
 .fileIcon {
   font-size: 20px;
-  color: #424242;
+  color: var(--text-color);
 }
 
 .uploadedImage {

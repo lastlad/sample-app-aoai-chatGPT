@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react'
-import { FontIcon, Stack, TextField } from '@fluentui/react'
+import { FontIcon, Stack, TextField, ITextFieldStyles } from '@fluentui/react'
 import { SendRegular } from '@fluentui/react-icons'
 
 import Send from '../../assets/Send.svg'
@@ -8,6 +8,7 @@ import styles from './QuestionInput.module.css'
 import { ChatMessage } from '../../api'
 import { AppStateContext } from '../../state/AppProvider'
 import { resizeImage } from '../../utils/resizeImage'
+import { useTheme } from '../../theme/ThemeContext'
 
 interface Props {
   onSend: (question: ChatMessage['content'], id?: string) => void
@@ -20,9 +21,26 @@ interface Props {
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId }: Props) => {
   const [question, setQuestion] = useState<string>('')
   const [base64Image, setBase64Image] = useState<string | null>(null);
+  const { theme } = useTheme();
 
   const appStateContext = useContext(AppStateContext)
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false;
+
+  const textFieldStyles: Partial<ITextFieldStyles> = {
+    field: {
+      backgroundColor: 'transparent',
+      color: 'var(--text-color)',
+      '::placeholder': {
+        color: 'var(--secondary-text)'
+      }
+    },
+    fieldGroup: {
+      backgroundColor: 'transparent',
+      '::after': {
+        backgroundColor: 'transparent'
+      }
+    }
+  };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -85,6 +103,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         value={question}
         onChange={onQuestionChange}
         onKeyDown={onEnterPress}
+        styles={textFieldStyles}
       />
       {!OYD_ENABLED && (
         <div className={styles.fileInputContainer}>

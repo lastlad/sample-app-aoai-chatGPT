@@ -4,7 +4,7 @@
   align-items: flex-start;
   padding: 8.1285px;
   gap: 5.42px;
-  background: #ffffff;
+  background: var(--dialog-bg);
   box-shadow:
     0px 1px 2px rgba(0, 0, 0, 0.14),
     0px 0px 2px rgba(0, 0, 0, 0.12);
@@ -16,7 +16,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #323130;
+  color: var(--text-color);
   flex: none;
   order: 1;
   align-self: stretch;
@@ -51,11 +51,10 @@
   font-weight: 400;
   font-size: 12px;
   line-height: 16px;
-
   display: flex;
   align-items: center;
   text-align: center;
-  color: #707070;
+  color: var(--secondary-text);
   flex: none;
   order: 1;
   flex-grow: 0;
@@ -75,15 +74,15 @@
   font-weight: 600;
   font-size: 12px;
   line-height: 16px;
-
-  color: #115ea3;
+  color: var(--link-color);
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 4px 6px;
   gap: 4px;
-  border: 1px solid #d1d1d1;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
+  background: var(--dialog-bg);
 }
 
 .citationContainer:hover {
@@ -100,7 +99,7 @@
   padding: 0px;
   width: 14px;
   height: 14px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   flex: none;
   flex-grow: 0;
@@ -110,7 +109,7 @@
   font-size: 10px;
   line-height: 14px;
   text-align: center;
-  color: #424242;
+  color: var(--text-color);
   cursor: pointer;
 }
 
@@ -126,7 +125,7 @@
   align-items: center;
   padding: 0px;
   margin-top: 4px;
-  color: #616161;
+  color: var(--secondary-text);
   font-size: 10px;
 }
 
@@ -143,7 +142,7 @@
   line-height: 16px;
   display: flex;
   align-items: center;
-  color: #616161;
+  color: var(--secondary-text);
 }
 
 .accordionTitle:hover {
@@ -159,7 +158,7 @@
   padding: 0px;
   width: 14px;
   height: 14px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   flex: none;
   order: 2;
@@ -170,7 +169,7 @@
   font-size: 10px;
   line-height: 14px;
   text-align: center;
-  color: #424242;
+  color: var(--text-color);
   cursor: pointer;
 }
 
